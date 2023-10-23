@@ -1,124 +1,54 @@
-import React from 'react'
-import axios from 'axios'
-import "./App.css"
-import { Typography, Button, Form, InputNumber, Select, Spin, notification, Result } from 'antd';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Button, Result } from 'antd';
 
-axios.defaults.baseURL = process.env.REACT_APP_BASE_URL
+axios.defaults.baseURL = process.env.REACT_APP_BASE_URL;
 
-const { Title } = Typography;
-
-const VISIT_TYPES = [
-  { value: 'opd', label: "OPD" },
-  { value: 'ipd', label: "IPD" },
-  { value: 'er', label: "ER" },
-]
-
-const INSURANCES = [
-  { value: 'samsung_life', label: "Samsung Life (OPD)" },
-  { value: 'aia_vitality', label: "AIA Vitality (IPD)" },
-  { value: 'fwd', label: "FWD Delight Care (ER)" },
-]
-
-const URL_CALCULATE = '/api/calculate-total-fee/'
+const URL_GET_NUMBER = '/api/get-number';
+const URL_INCREASE_NUMBER = '/api/increase/';
 
 function App() {
-  const [notiApi, notiContextHolder] = notification.useNotification();
-  const [result, setResult] = React.useState(null);
-  const [loading, setLoading] = React.useState(false)
+  const [number, setNumber] = useState(null);
+  const [increasing, setIncreasing] = useState(false);
 
-  const onFinish = async (values) => {
+  // Function to get the current number from the backend
+  const getNumber = async () => {
     try {
-      setResult(null)
-      setLoading(true)
-      const resp = await axios.post(URL_CALCULATE, { params: values })
-      setResult(resp.data['total'])
-    } catch(error) {
-      console.log(error)
-      notiApi.error({
-        message: `HTTP Request Error!`,
-        description: error.response ? error.response.data.details : error.message,
-        placement: "bottomRight",
-        duration: 10,
-      });
-    } finally {
-      setLoading(false)
+      const response = await axios.get(URL_GET_NUMBER);
+      setNumber(response.data.number);
+    } catch (error) {
+      console.error(error);
     }
-  }
+  };
+
+  // Function to increase the number
+  const increaseNumber = async () => {
+    setIncreasing(true);
+    try {
+      await axios.post(URL_INCREASE_NUMBER);
+      getNumber(); // Refresh the number after increasing
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIncreasing(false);
+    }
+  };
+
+  useEffect(() => {
+    getNumber(); // Fetch the initial number on component mount
+  }, []);
 
   return (
     <div className="center-screen">
-      {notiContextHolder}
-      <Spin spinning={loading} tip='loading...'>
-        {result == null && 
-          <Form onFinish={onFinish} >
-            <Form.Item>
-              <Typography>
-                <Title>HIS Financial Calculator</Title>
-              </Typography>
-            </Form.Item>
-            <Form.Item
-              name="type"
-              label="Type"
-              rules={[
-                {
-                  required: true,
-                },
-              ]}
-            >
-              <Select
-                placeholder="Select Visit Type"
-
-                options={VISIT_TYPES}
-                allowClear
-              >
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="insurance"
-              label="Insurance">
-              <Select
-                placeholder="Select Insurance"
-                options={INSURANCES}
-                allowClear
-              >
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="price"
-              label="Price"
-              rules={[
-                {
-                  required: true,
-                },
-              ]}
-            >
-              <InputNumber
-                addonAfter="฿"
-                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Submit
-              </Button>
-            </Form.Item>
-          </Form>
+      <Result
+        status="info"
+        title={`Current Number: ${number ?? 'Loading...'}`}
+        extra={
+          <Button type="primary" onClick={increaseNumber} loading={increasing}>
+            Increase Number
+          </Button>
         }
-      </Spin>
-
-      {result != null &&
-        <Result
-          status="success"
-          title={`${result} ฿`}
-          subTitle="Successfully Calculate Reimbursement!"
-          extra={[
-            <Button type="primary" onClick={() => setResult(null)}>
-              Back
-            </Button>,
-          ]}
-        />
-      }
+      />
     </div>
   );
 }

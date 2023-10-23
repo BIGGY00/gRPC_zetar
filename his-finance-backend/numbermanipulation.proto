@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message NumberRequest {
+    float number = 1;
+}
+
+message NumberResponse {
+    float result = 1;
+}
+
+service NumberManipulation {
+    rpc increaseNumberByTwo (NumberRequest) returns (NumberResponse) {};
+}
