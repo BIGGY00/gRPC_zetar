@@ -1,0 +1,45 @@
+version: '3.9'
+services:
+  frontend:
+    container_name: frontend
+    build:
+      context: ./his-finance-frontend
+      dockerfile: Dockerfile.development
+    volumes:
+      - ./his-finance-frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_BASE_URL=http://localhost:8000
+      - WDS_SOCKET_HOST=localhost
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+
+  backend:
+    container_name: backend
+    build:
+      context: ./his-finance-backend
+      dockerfile: Dockerfile.development
+    volumes:
+      - ./his-finance-backend:/server
+      - /server/node_modules
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PLUGIN_HOST=plugin
+      - PLUGIN_PORT=50001
+
+  plugin:
+    container_name: plugin
+    build:
+      context: ./his-finance-reimbursement
+      dockerfile: ./Dockerfile.development
+    volumes:
+      - "./his-finance-reimbursement:/plugin"
+      - "/plugin/node_modules"
+    expose:
+      - "50001"
+    environment:
+      - PLUGIN_PORT=50001
