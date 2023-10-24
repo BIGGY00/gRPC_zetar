@@ -1,15 +1,18 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors')
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT;
 const { reimbursement_proto, grpc } = require('./reimbursementPlugin');
 const promisify = require('util.promisify');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(bodyParser.raw());
-app.use(cors());
+
+if (process.env.NODE_ENV !== 'production') { 
+  const cors = require('cors') 
+  app.use(cors());
+}
 
 app.post('/api/calculate-total-fee/', async (req, res) => {
   const client = new reimbursement_proto.Reimbursement(
